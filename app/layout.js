@@ -1,19 +1,16 @@
 import './globals.css';
-import Sidebar from './components/Sidebar';
+import Shell from './components/Shell';
 
 export const metadata = {
-  title: 'LBAR Admin - Panel de reservas',
-  description: 'Panel de administracion de reservas',
+  title: 'LBAR Reservas - Panel de administracion',
+  description: 'Gestiona las reservas de tu negocio en un solo lugar',
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="es">
       <body>
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <main className="flex-1 p-8 max-w-7xl">{children}</main>
-        </div>
+        <Shell>{children}</Shell>
       </body>
     </html>
   );
