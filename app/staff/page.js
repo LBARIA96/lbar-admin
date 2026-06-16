@@ -1,36 +1,98 @@
-import { staff } from '../lib/data';
-import { PageHeader, Card, Pill, Button } from '../components/ui';
+'use client';
 
-function initials(name) {
-  return name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
-}
+import { useEffect, useState } from 'react';
+import { getMyStaff, saveStaff, deleteStaff } from '../lib/queries';
+import { PageHeader, Card, Pill, Button, Modal, Field, Input, EmptyState } from '../components/ui';
+
+export const dynamic = 'force-dynamic';
+
+const EMPTY = { name: '', email: '', is_active: true };
 
 export default function StaffPage() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(EMPTY);
+  const [saving, setSaving] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    setItems(await getMyStaff());
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  function openNew() { setForm(EMPTY); setOpen(true); }
+  function openEdit(s) { setForm({ id: s.id, name: s.name, email: s.email || '', is_active: s.is_active }); setOpen(true); }
+
+  async function handleSave() {
+    if (!form.name.trim()) { alert('El nombre es obligatorio'); return; }
+    setSaving(true);
+    const { error } = await saveStaff(form);
+    setSaving(false);
+    if (error) { alert('Error al guardar: ' + error.message); return; }
+    setOpen(false);
+    load();
+  }
+
+  async function handleDelete(s) {
+    if (!confirm('Eliminar a "' + s.name + '"?')) return;
+    const { error } = await deleteStaff(s.id);
+    if (error) { alert('Error al eliminar: ' + error.message); return; }
+    load();
+  }
+
   return (
     <div>
       <PageHeader
         title="Staff"
-        subtitle="Equipo que atiende los turnos"
-        action={<Button>+ Agregar miembro</Button>}
+        subtitle="Profesionales que atienden los turnos"
+        action={<Button onClick={openNew}>+ Nuevo profesional</Button>}
       />
-      <Card className="overflow-hidden">
-        <ul className="divide-y divide-slate-100">
-          {staff.map((m) => (
-            <li key={m.id} className="px-5 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-brand/10 text-brand flex items-center justify-center font-semibold text-sm">
-                  {initials(m.name)}
-                </div>
+      {loading ? (
+        <p className="text-sm text-slate-500">Cargando...</p>
+      ) : items.length === 0 ? (
+        <EmptyState title="Todavia no tenes profesionales cargados" subtitle="Agrega a tu equipo para asignar turnos." />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {items.map((s) => (
+            <Card key={s.id} className="p-5">
+              <div className="flex items-start justify-between">
                 <div>
-                  <p className="font-medium text-slate-900">{m.name}</p>
-                  <p className="text-xs text-slate-500">{m.role}</p>
+                  <h3 className="font-semibold text-slate-900">{s.name}</h3>
+                  {s.email && <p className="text-sm text-slate-500 mt-0.5">{s.email}</p>}
                 </div>
+                <Pill active={s.is_active} />
               </div>
-              <Pill active={m.active} />
-            </li>
+              <div className="flex gap-2 mt-4">
+                <Button variant="ghost" className="flex-1" onClick={() => openEdit(s)}>Editar</Button>
+                <Button variant="danger" onClick={() => handleDelete(s)}>Eliminar</Button>
+              </div>
+            </Card>
           ))}
-        </ul>
-      </Card>
+        </div>
+      )}
+
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={form.id ? 'Editar profesional' : 'Nuevo profesional'}
+        footer={<>
+          <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</Button>
+        </>}
+      >
+        <Field label="Nombre">
+          <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ej: Maria Gomez" />
+        </Field>
+        <Field label="Email (opcional)">
+          <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="maria@ejemplo.com" />
+        </Field>
+        <label className="flex items-center gap-2 text-sm text-slate-700 mt-1">
+          <input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />
+          Activo
+        </label>
+      </Modal>
     </div>
   );
 }
