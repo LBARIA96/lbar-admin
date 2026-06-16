@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 
 // Rutas publicas que NO deben mostrar el sidebar del panel admin.
-const PUBLIC_ROUTES = ['/bienvenida', '/registro'];
+const PUBLIC_ROUTES = ['/bienvenida', '/registro', '/reservar'];
 
 export default function Shell({ children }) {
   const pathname = usePathname();
