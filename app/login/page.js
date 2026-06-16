@@ -4,6 +4,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '../lib/supabaseClient';
 
+// Forzar render dinamico: evita el prerender estatico en build time.
+export const dynamic = 'force-dynamic';
+
 export default function LoginPage() {
 const router = useRouter();
 const [email, setEmail] = useState('');
