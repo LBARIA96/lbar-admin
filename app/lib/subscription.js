@@ -73,6 +73,33 @@ export async function selectPlan(subscriptionId, tier) {
   return data;
 }
 
+// Inicia el checkout de pago para un plan pago.
+// Llama a la ruta /api/mp/checkout (que usa MP_ACCESS_TOKEN del servidor)
+// y devuelve la URL de pago de Mercado Pago. Si MP no esta configurado,
+// devuelve { configured: false } para que la UI haga el fallback de demo.
+export async function startCheckout(subscription, plan, email) {
+  const res = await fetch('/api/mp/checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      tier: plan.tier,
+      price: plan.price,
+      subscriptionId: subscription.id,
+      businessId: subscription.business_id,
+      email: email || null,
+    }),
+  });
+  if (res.status === 500) {
+    // Falta MP_ACCESS_TOKEN: todavia no esta conectada la pasarela.
+    return { configured: false };
+  }
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'No se pudo iniciar el pago.');
+  }
+  return { configured: true, url: data.init_point };
+}
+
 export function planMoney(amount) {
   const n = Number(amount || 0);
   if (n === 0) return 'Gratis';
