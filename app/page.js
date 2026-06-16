@@ -1,60 +1,64 @@
-import { appointments, customerName, serviceName, staffName, money } from './lib/data';
-import { PageHeader, StatCard, Card, StatusBadge } from './components/ui';
+'use client';
 
-function isSameDay(iso, ref) {
-  const d = new Date(iso);
-  return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth() && d.getDate() === ref.getDate();
-}
-function hhmm(iso) {
-  return new Date(iso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-}
+import { useEffect, useState } from 'react';
+import { getDashboardStats, getMyBusiness, money, fmtDate } from './lib/queries';
+import { PageHeader, StatCard, Card, StatusBadge, EmptyState } from './components/ui';
+
+export const dynamic = 'force-dynamic';
 
 export default function DashboardPage() {
-  const today = new Date();
-  const todays = appointments
-    .filter((a) => isSameDay(a.starts_at, today) && a.status !== 'cancelled')
-    .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
-  const confirmed = appointments.filter((a) => a.status === 'confirmed').length;
-  const pending = appointments.filter((a) => a.status === 'pending').length;
-  const revenue = appointments
-    .filter((a) => a.status === 'confirmed' || a.status === 'completed')
-    .reduce((s, a) => s + (a.price || 0), 0);
+  const [stats, setStats] = useState(null);
+  const [bizName, setBizName] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const biz = await getMyBusiness();
+      setBizName(biz ? biz.name : '');
+      setStats(await getDashboardStats());
+      setLoading(false);
+    })();
+  }, []);
 
   return (
     <div>
-      <PageHeader title="Dashboard" subtitle="Resumen de actividad del negocio" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Turnos hoy" value={todays.length} hint="No cancelados" />
-        <StatCard label="Confirmadas" value={confirmed} hint="En total" />
-        <StatCard label="Pendientes" value={pending} hint="Requieren confirmacion" />
-        <StatCard label="Ingresos" value={money(revenue)} hint="Confirmadas + completadas" />
-      </div>
-      <Card>
-        <div className="px-5 py-4 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-900">Agenda de hoy</h2>
-        </div>
-        {todays.length === 0 ? (
-          <p className="px-5 py-8 text-center text-sm text-slate-400">No hay turnos para hoy.</p>
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {todays.map((a) => (
-              <li key={a.id} className="px-5 py-3.5 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-semibold text-slate-700 w-14">{hhmm(a.starts_at)}</span>
+      <PageHeader
+        title="Inicio"
+        subtitle={bizName ? ('Resumen de ' + bizName) : 'Resumen de tu negocio'}
+      />
+      {loading || !stats ? (
+        <p className="text-sm text-slate-500">Cargando...</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <StatCard label="Servicios" value={stats.services} />
+            <StatCard label="Profesionales" value={stats.staff} />
+            <StatCard label="Clientes" value={stats.customers} />
+            <StatCard label="Proximos turnos" value={stats.upcoming.length} />
+          </div>
+
+          <h2 className="text-lg font-semibold text-slate-900 mb-3">Proximos turnos</h2>
+          {stats.upcoming.length === 0 ? (
+            <EmptyState title="No tenes turnos proximos" subtitle="Cuando agendes reservas las vas a ver aca." />
+          ) : (
+            <div className="space-y-3">
+              {stats.upcoming.map((a) => (
+                <Card key={a.id} className="p-4 flex items-center justify-between flex-wrap gap-3">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{customerName(a.customer_id)}</p>
-                    <p className="text-xs text-slate-500">{serviceName(a.service_id)} &middot; {staffName(a.staff_id)}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-slate-900">{a.service ? a.service.name : 'Servicio'}</span>
+                      <StatusBadge status={a.status} />
+                    </div>
+                    <p className="text-sm text-slate-500 mt-0.5">{a.customer ? a.customer.name : 'Cliente'}</p>
+                    <p className="text-sm text-slate-400 mt-0.5">{fmtDate(a.starts_at)}</p>
                   </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-slate-600">{money(a.price)}</span>
-                  <StatusBadge status={a.status} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+                  {a.price != null && <span className="text-sm font-semibold text-slate-700">{money(a.price)}</span>}
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
