@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getMyAppointments, updateAppointmentStatus, createAppointment, getMyServices, getMyStaff, getMyCustomers, money, fmtDate } from '../lib/queries';
 import { PageHeader, Card, Button, Modal, Field, Input, Select, StatusBadge, EmptyState } from '../components/ui';
+import { hasConflict } from '../lib/public';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,6 +40,8 @@ export default function ReservasPage() {
     const dur = svc ? svc.duration_minutes : 30;
     const starts = new Date(form.date + 'T' + form.time + ':00');
     const ends = new Date(starts.getTime() + dur * 60000);
+    const conflict = await hasConflict(null, form.staff_id, starts.toISOString(), ends.toISOString());
+    if (conflict) { alert('Ese profesional ya tiene un turno en ese horario.'); return; }
     setSaving(true);
     const { error } = await createAppointment({
       service_id: form.service_id,
