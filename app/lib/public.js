@@ -95,16 +95,19 @@ export function buildSlots(dateStr, rules, busy, durationMin, intervalMin) {
 
 // Returns true if the given [startsAt, endsAt) range overlaps an existing
 // non-cancelled appointment for the same staff member.
+// businessId is optional: when omitted, RLS scopes the query to the
+// authenticated owner's own business (used from the admin panel).
 export async function hasConflict(businessId, staffId, startsAt, endsAt) {
-  const { data, error } = await supabase
+  let q = supabase
     .from('appointment')
     .select('id')
-    .eq('business_id', businessId)
     .eq('staff_id', staffId)
     .neq('status', 'cancelled')
     .lt('starts_at', endsAt)
     .gt('ends_at', startsAt)
     .limit(1);
+  if (businessId) q = q.eq('business_id', businessId);
+  const { data, error } = await q;
   if (error) throw error;
   return (data || []).length > 0;
 }
