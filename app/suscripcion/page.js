@@ -9,6 +9,7 @@ import {
   STATUS_LABELS,
   getMySubscription,
   selectPlan,
+  startCheckout,
   planMoney,
 } from '../lib/subscription';
 
@@ -43,12 +44,16 @@ export default function SuscripcionPage() {
         setSub(updated);
         setInfo('Tu plan quedo en Free.');
       } else {
-        // Punto de integracion con la pasarela de pago.
-        // Cuando conectes Mercado Pago / Stripe, reemplaza este bloque
-        // por la redireccion al checkout (window.location = checkoutUrl).
+                // Plan pago: intentamos abrir el checkout de Mercado Pago.
+        const co = await startCheckout(sub, PLANS.find(p => p.tier === tier) || { tier, price: 0 }, null);
+        if (co.configured && co.url) {
+          window.location.href = co.url;
+          return;
+        }
+        // MP todavia no esta conectado: dejamos el plan como prueba (demo).
         const updated = await selectPlan(sub.id, tier);
         setSub(updated);
-        setInfo('Plan seleccionado. El cobro se activa al conectar la pasarela de pago.');
+        setInfo('Plan seleccionado en modo prueba. Conecta Mercado Pago (variable MP_ACCESS_TOKEN en Vercel) para cobrar de verdad.');
       }
     } catch (e) {
       setError(e.message || 'No se pudo cambiar el plan.');
