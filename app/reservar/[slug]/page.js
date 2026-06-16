@@ -215,7 +215,7 @@ export default function ReservarPage({ params }) {
             <Section title="4. Tus datos">
               <div className="grid gap-3">
                 <input className="border border-gray-300 rounded-lg px-3 py-2" placeholder="Nombre y apellido *" value={name} onChange={(e) => setName(e.target.value)} required />
-                <input className="border border-gray-300 rounded-lg px-3 py-2" placeholder="Tel\u00e9fono" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <input className="border border-gray-300 rounded-lg px-3 py-2" placeholder="Teléfono" value={phone} onChange={(e) => setPhone(e.target.value)} />
                 <input className="border border-gray-300 rounded-lg px-3 py-2" placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                 <textarea className="border border-gray-300 rounded-lg px-3 py-2" placeholder="Nota (opcional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
               </div>
