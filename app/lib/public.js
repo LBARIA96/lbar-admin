@@ -93,7 +93,30 @@ export function buildSlots(dateStr, rules, busy, durationMin, intervalMin) {
   return Array.from(new Set(slots)).sort();
 }
 
+// Returns true if the given [startsAt, endsAt) range overlaps an existing
+// non-cancelled appointment for the same staff member.
+export async function hasConflict(businessId, staffId, startsAt, endsAt) {
+  const { data, error } = await supabase
+    .from('appointment')
+    .select('id')
+    .eq('business_id', businessId)
+    .eq('staff_id', staffId)
+    .neq('status', 'cancelled')
+    .lt('starts_at', endsAt)
+    .gt('ends_at', startsAt)
+    .limit(1);
+  if (error) throw error;
+  return (data || []).length > 0;
+}
+
 export async function createPublicBooking({ businessId, serviceId, staffId, startsAt, endsAt, price, customer }) {
+  // 0) re-validate that the slot is still free (avoids double-booking)
+  const conflict = await hasConflict(businessId, staffId, startsAt, endsAt);
+  if (conflict) {
+    const e = new Error('SLOT_TAKEN');
+    e.code = 'SLOT_TAKEN';
+    throw e;
+  }
   // 1) create customer
   const { data: cust, error: cErr } = await supabase
     .from('customer')
@@ -132,8 +155,8 @@ export const WEEKDAYS_ES = ['Domingo','Lunes','Martes','Miercoles','Jueves','Vie
 export function moneyFmt(currency, amount) {
   const n = Number(amount || 0);
   try {
-    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: currency || 'ARS', maximumFractionDigits: 0 }).format(n);
+    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: currency || 'ARS' }).format(n);
   } catch {
-    return '$' + n;
+    return '$' + n.toFixed(2);
   }
 }
