@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { scheduleReminder } from './reminders';
 
 // ---- Public booking helpers (anon access) ----
 
@@ -150,6 +151,9 @@ export async function createPublicBooking({ businessId, serviceId, staffId, star
     .select('id')
     .single();
   if (aErr) throw aErr;
+    if (appt && appt.id) {
+    await scheduleReminder({ appointmentId: appt.id, businessId, startsAt });
+  }
   return appt;
 }
 
