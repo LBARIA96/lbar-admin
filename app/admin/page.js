@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabaseClient';
 
+// Forzar render dinamico: evita el prerender estatico en build time.
+export const dynamic = 'force-dynamic';
+
 export default function AdminPage() {
 const router = useRouter();
 const [session, setSession] = useState(null);
