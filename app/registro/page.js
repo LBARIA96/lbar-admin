@@ -3,6 +3,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '../lib/supabaseClient';
 
+// Forzar render dinamico: evita el prerender estatico en build time.
+export const dynamic = 'force-dynamic';
+
 export default function RegistroPage() {
 const [businessName, setBusinessName] = useState('');
 const [email, setEmail] = useState('');
