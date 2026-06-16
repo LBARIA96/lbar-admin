@@ -106,7 +106,7 @@ export default function SuscripcionPage() {
               </ul>
               <div className="mt-5">
                 {isCurrent ? (
-                  <Button variant="secondary" onClick={() => {}}>Plan actual</Button>
+                  <Button variant="ghost" onClick={() => {}}>Plan actual</Button>
                 ) : (
                   <Button onClick={() => choose(plan.tier)}>
                     {saving === plan.tier ? 'Procesando...' : (plan.tier === 'free' ? 'Cambiar a Free' : 'Elegir ' + plan.name)}
