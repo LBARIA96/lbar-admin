@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { scheduleReminder } from './reminders';
 
 // ---------- BUSINESS ----------
 export async function getMyBusiness() {
@@ -177,6 +178,9 @@ export async function createAppointment(a) {
     customer_note: a.customer_note || null,
   };
   const { data, error } = await supabase.from('appointment').insert(row).select().maybeSingle();
+    if (data && !error) {
+    await scheduleReminder({ appointmentId: data.id, businessId: biz.id, startsAt: data.starts_at });
+  }
   return { data, error };
 }
 
