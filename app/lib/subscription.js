@@ -10,6 +10,7 @@ export const PLANS = [
     price: 0,
     description: 'Para empezar a recibir turnos online.',
     features: ['1 profesional', 'Turnos ilimitados', 'Pagina publica de reservas'],
+    limits: { staff: 1, services: 5 },
   },
   {
     tier: 'pro',
@@ -17,6 +18,7 @@ export const PLANS = [
     price: 9999,
     description: 'Para negocios en crecimiento.',
     features: ['Hasta 5 profesionales', 'Recordatorios por WhatsApp', 'Confirmacion automatica', 'Soporte prioritario'],
+    limits: { staff: 5, services: 9999 },
   },
   {
     tier: 'business',
@@ -24,6 +26,7 @@ export const PLANS = [
     price: 24999,
     description: 'Para varios locales y equipos grandes.',
     features: ['Profesionales ilimitados', 'Multiples sucursales', 'Reportes avanzados', 'Soporte dedicado'],
+    limits: { staff: 9999, services: 9999 },
   },
 ];
 
@@ -108,4 +111,22 @@ export function planMoney(amount) {
   } catch {
     return '$' + n + ' /mes';
   }
+}
+
+// ---------- LIMITES DE PLAN ----------
+const DEFAULT_LIMITS = { staff: 1, services: 5 };
+
+// Devuelve los limites del plan segun el tier ('free' | 'pro' | 'business').
+export function getPlanLimits(tier) {
+  const plan = PLANS.find((p) => p.tier === tier);
+  return (plan && plan.limits) ? plan.limits : DEFAULT_LIMITS;
+}
+
+// Devuelve el tier de la suscripcion del negocio actual.
+// Si no esta activa o en prueba, cae a 'free'.
+export async function getMyTier() {
+  const sub = await getMySubscription();
+  if (!sub) return 'free';
+  const activo = sub.status === 'active' || sub.status === 'trialing';
+  return activo ? (sub.tier || 'free') : 'free';
 }
