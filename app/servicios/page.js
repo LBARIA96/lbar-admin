@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getMyServices, saveService, deleteService, money } from '../lib/queries';
+import { getPlanLimits, getMyTier } from '../lib/subscription';
 import { PageHeader, Card, Pill, Button, Modal, Field, Input, Textarea, EmptyState } from '../components/ui';
 
 export const dynamic = 'force-dynamic';
@@ -14,16 +15,23 @@ export default function ServiciosPage() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [maxServices, setMaxServices] = useState(9999);
+  const [limitMsg, setLimitMsg] = useState('');
 
   async function load() {
     setLoading(true);
     const rows = await getMyServices();
     setServices(rows);
+    const tier = await getMyTier();
+    setMaxServices(getPlanLimits(tier).services);
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
 
-  function openNew() { setForm(EMPTY); setOpen(true); }
+  function openNew() {
+    if (services.length >= maxServices) { setLimitMsg('Llegaste al limite de servicios de tu plan. Actualiza tu plan para agregar mas.'); return; }
+    setLimitMsg(''); setForm(EMPTY); setOpen(true);
+  }
   function openEdit(s) { setForm({ id: s.id, name: s.name, description: s.description || '', duration_minutes: s.duration_minutes, price: s.price, is_active: s.is_active }); setOpen(true); }
 
   async function handleSave() {
@@ -50,6 +58,12 @@ export default function ServiciosPage() {
         subtitle="Catalogo de servicios ofrecidos"
         action={<Button onClick={openNew}>+ Nuevo servicio</Button>}
       />
+      {limitMsg && (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-center justify-between gap-3">
+          <span>{limitMsg}</span>
+          <a href="/suscripcion" className="font-medium underline whitespace-nowrap">Ver planes</a>
+        </div>
+      )}
       {loading ? (
         <p className="text-sm text-slate-500">Cargando...</p>
       ) : services.length === 0 ? (
