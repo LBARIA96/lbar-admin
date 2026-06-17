@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getMyStaff, saveStaff, deleteStaff } from '../lib/queries';
+import { getPlanLimits, getMyTier } from '../lib/subscription';
 import { PageHeader, Card, Pill, Button, Modal, Field, Input, EmptyState } from '../components/ui';
 
 export const dynamic = 'force-dynamic';
@@ -14,15 +15,22 @@ export default function StaffPage() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [maxStaff, setMaxStaff] = useState(9999);
+  const [limitMsg, setLimitMsg] = useState('');
 
   async function load() {
     setLoading(true);
     setItems(await getMyStaff());
+    const tier = await getMyTier();
+    setMaxStaff(getPlanLimits(tier).staff);
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
 
-  function openNew() { setForm(EMPTY); setOpen(true); }
+  function openNew() {
+    if (items.length >= maxStaff) { setLimitMsg('Llegaste al limite de profesionales de tu plan. Actualiza tu plan para agregar mas.'); return; }
+    setLimitMsg(''); setForm(EMPTY); setOpen(true);
+  }
   function openEdit(s) { setForm({ id: s.id, name: s.name, email: s.email || '', is_active: s.is_active }); setOpen(true); }
 
   async function handleSave() {
@@ -49,6 +57,12 @@ export default function StaffPage() {
         subtitle="Profesionales que atienden los turnos"
         action={<Button onClick={openNew}>+ Nuevo profesional</Button>}
       />
+      {limitMsg && (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-center justify-between gap-3">
+          <span>{limitMsg}</span>
+          <a href="/suscripcion" className="font-medium underline whitespace-nowrap">Ver planes</a>
+        </div>
+      )}          
       {loading ? (
         <p className="text-sm text-slate-500">Cargando...</p>
       ) : items.length === 0 ? (
